@@ -1,0 +1,65 @@
+# Product Import Status Rollout
+
+## ✅ Summary
+- Added `ProductImportJobStatusOut` schema and `GetProductImportStatusUseCase`, aggregating total jobs, per-status counts, cumulative errors, and a slice of recent jobs.
+- Published `/api/v1/products/import/status` on the products router (registered before dynamic routes), supporting an optional `limit` query (default 5, min 0, max 50).
+- Integration suite now verifies both authentication enforcement and the happy-path summary response.
+
+## 🧪 Validation
+- `pytest tests/integration/api/test_product_bulk_import_api.py`  
+  Result: **PASS** (8 tests; only existing Alembic/argon2/SQLAlchemy deprecation warnings observed)
+
+## 📊 Metrics Tracked
+- Totals for `pending`, `queued`, `processing`, `completed`, `failed`
+- Aggregate `errors` (sum of job `error_count`)
+- `last_jobs` list honoring the requested/ default limit, returned in newest-first order
+
+## ⚙️ Implementation Notes
+- Repository’s `list_jobs` method provides descending `created_at` ordering, feeding the recent job slice.
+- Route placement ensures `/status` isn’t shadowed by `/import/{job_id}`.
+- Use case guards against negative limits and converts limit `0` into an empty `last_jobs` list without touching counts.
+
+## 🔜 Next Options
+- Silence recurring Alembic/argon2/UTC deprecation warnings in the test run.
+- Explore lightweight caching if status polling becomes frequent in production.
+- Consider exposing additional rollups (e.g., average duration once timestamps are available).
+
+## 📁 Touched Files
+- `app/api/routers/products_router.py`
+- `app/api/schemas/product_import.py`
+- `app/application/catalog/use_cases/get_product_import_status.py`
+- `tests/integration/api/test_product_bulk_import_api.py`
+
+Feel free to drop this into a `status.md` file or share it directly with the team.# Product Import Status Rollout
+
+## ✅ Summary
+- Added `ProductImportJobStatusOut` schema and `GetProductImportStatusUseCase`, aggregating total jobs, per-status counts, cumulative errors, and a slice of recent jobs.
+- Published `/api/v1/products/import/status` on the products router (registered before dynamic routes), supporting an optional `limit` query (default 5, min 0, max 50).
+- Integration suite now verifies both authentication enforcement and the happy-path summary response.
+
+## 🧪 Validation
+- `pytest tests/integration/api/test_product_bulk_import_api.py`  
+  Result: **PASS** (8 tests; only existing Alembic/argon2/SQLAlchemy deprecation warnings observed)
+
+## 📊 Metrics Tracked
+- Totals for `pending`, `queued`, `processing`, `completed`, `failed`
+- Aggregate `errors` (sum of job `error_count`)
+- `last_jobs` list honoring the requested/ default limit, returned in newest-first order
+
+## ⚙️ Implementation Notes
+- Repository’s `list_jobs` method provides descending `created_at` ordering, feeding the recent job slice.
+- Route placement ensures `/status` isn’t shadowed by `/import/{job_id}`.
+- Use case guards against negative limits and converts limit `0` into an empty `last_jobs` list without touching counts.
+
+## 🔜 Next Options
+- Silence recurring Alembic/argon2/UTC deprecation warnings in the test run.
+- Explore lightweight caching if status polling becomes frequent in production.
+- Consider exposing additional rollups (e.g., average duration once timestamps are available).
+
+## 📁 Touched Files
+- `app/api/routers/products_router.py`
+- `app/api/schemas/product_import.py`
+- `app/application/catalog/use_cases/get_product_import_status.py`
+- `tests/integration/api/test_product_bulk_import_api.py`
+
+Feel free to drop this into a `status.md` file or share it directly with the team.

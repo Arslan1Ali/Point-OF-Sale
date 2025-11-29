@@ -1,0 +1,27 @@
+# Global ignores
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+*.log
+*.sqlite*
+.devcontainer/
+.env
+.env.local
+.env.*.local
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+ruff_cache/
+.idea/
+.vscode/
+.DS_Store
+
+# Project-specific
+/backend/dev.db
+/backend/.env.local
+/backend/.env
+/desktop_client/.env
+/modern_client/.env
+/tmp/

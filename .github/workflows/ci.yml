@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  lint:
+    name: Lint (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Cache Poetry virtualenvs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('backend/poetry.lock') }}
+      - name: Install dependencies
+        run: |
+          cd backend
+          poetry install --no-interaction --no-root
+      - name: Ruff
+        run: cd backend && poetry run ruff check .
+      - name: mypy
+        run: cd backend && poetry run mypy .
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: "1234"
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:1234@localhost:5432/retail_pos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Cache Poetry virtualenvs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-3.11-${{ hashFiles('backend/poetry.lock') }}
+      - name: Install dependencies
+        run: |
+          cd backend
+          poetry install --no-interaction --no-root
+      - name: Create database
+        run: psql -h localhost -U postgres -c "CREATE DATABASE retail_pos;"
+        env:
+          PGPASSWORD: "1234"
+      - name: Pytest with coverage
+        run: cd backend && poetry run pytest --cov=app --cov-report=term --cov-report=xml --cov-fail-under=80
+      - name: Upload coverage.xml
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+
+  migrations:
+    name: Migrations SQL Dry Run
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:1234@localhost:5432/retail_pos
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Cache Poetry virtualenvs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-3.11-${{ hashFiles('backend/poetry.lock') }}
+      - name: Install dependencies
+        run: |
+          cd backend
+          poetry install --no-interaction --no-root
+      - name: Alembic SQL dry run
+        run: cd backend && poetry run alembic upgrade head --sql
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Cache Poetry virtualenvs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-3.11-${{ hashFiles('backend/poetry.lock') }}
+      - name: Install dependencies
+        run: |
+          cd backend
+          poetry install --no-interaction --no-root
+      - name: Bandit
+        run: cd backend && poetry run bandit -q -r app
+      - name: pip-audit
+        run: cd backend && poetry run pip-audit --strict

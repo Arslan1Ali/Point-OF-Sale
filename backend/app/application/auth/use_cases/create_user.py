@@ -1,0 +1,28 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from app.application.auth.ports import PasswordHasherPort, UserRepositoryPort
+from app.domain.auth.entities import User, UserRole
+from app.domain.common.errors import ConflictError
+
+
+@dataclass
+class CreateUserInput:
+    email: str
+    password: str
+    role: UserRole = UserRole.CASHIER
+
+
+class CreateUserUseCase:
+    def __init__(self, repo: UserRepositoryPort, hasher: PasswordHasherPort):
+        self._repo = repo
+        self._hasher = hasher
+
+    async def execute(self, data: CreateUserInput) -> User:
+        if await self._repo.get_by_email(data.email):
+            raise ConflictError("email already registered")
+        hashed = self._hasher.hash(data.password)
+        user = User.create(email=data.email, password_hash=hashed, role=data.role)
+        await self._repo.add(user)
+        return user

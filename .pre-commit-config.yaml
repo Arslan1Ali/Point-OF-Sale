@@ -1,0 +1,28 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-ast
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: poetry-ruff
+        name: Ruff (Poetry)
+        entry: poetry
+        language: system
+        pass_filenames: false
+        args: ["-C", "backend", "run", "ruff", "check", "."]
+      - id: poetry-mypy
+        name: mypy (Poetry)
+        entry: poetry
+        language: system
+        pass_filenames: false
+        args: ["-C", "backend", "run", "mypy", "."]
+      - id: poetry-pytest-unit
+        name: Pytest unit suite (Poetry)
+        entry: poetry
+        language: system
+        pass_filenames: false
+        args: ["-C", "backend", "run", "pytest", "tests/unit"]
