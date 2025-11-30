@@ -89,22 +89,27 @@ class POSView(ft.Container):
         )
 
     def _build_header(self):
-        return ft.Row(
-            [
-                ft.TextField(
-                    hint_text="Search products...",
-                    prefix_icon=icons.SEARCH,
-                    bgcolor="#2d3033",
-                    border_radius=10,
-                    border_width=0,
-                    color="white",
-                    expand=True,
-                    on_change=self._on_search
-                ),
-                ft.IconButton(icons.FILTER_LIST, icon_color="white", tooltip="Filter"),
-                ft.IconButton(icons.REFRESH, icon_color="white", tooltip="Refresh", on_click=lambda e: self._load_data()),
-            ]
-        )
+        controls = [
+            ft.TextField(
+                hint_text="Search products...",
+                prefix_icon=icons.SEARCH,
+                bgcolor="#2d3033",
+                border_radius=10,
+                border_width=0,
+                color="white",
+                expand=True,
+                on_change=self._on_search
+            ),
+            ft.IconButton(icons.FILTER_LIST, icon_color="white", tooltip="Filter"),
+            ft.IconButton(icons.REFRESH, icon_color="white", tooltip="Refresh", on_click=lambda e: self._load_data()),
+        ]
+
+        if self.app.user_role == "CASHIER":
+            controls.append(
+                ft.IconButton(icons.LOGOUT, icon_color="#cf6679", tooltip="Logout", on_click=lambda e: self.app.navigate("logout"))
+            )
+
+        return ft.Row(controls)
 
     def _load_data(self):
         # Only load active products for POS

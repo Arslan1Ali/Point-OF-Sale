@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies.auth import MANAGEMENT_ROLES, require_roles
+from app.api.dependencies.auth import ADMIN_ROLE, MANAGEMENT_ROLES, require_roles
 from app.infrastructure.db.session import get_session
 from app.shared.pagination import Page, PageParams
 from app.api.schemas.employee import (
@@ -17,10 +17,13 @@ from app.api.schemas.employee import (
     IncrementCreate,
     SalaryHistoryOut,
 )
-from app.domain.auth.entities import User
+from app.application.auth.use_cases.create_user import CreateUserInput, CreateUserUseCase
+from app.domain.auth.entities import User, UserRole
 from app.domain.common.money import Money
 from app.domain.employees.entities import Employee
+from app.infrastructure.auth.password_hasher import PasswordHasher
 from app.infrastructure.db.repositories.employee_repository import SqlAlchemyEmployeeRepository
+from app.infrastructure.db.repositories.user_repository import UserRepository
 
 router = APIRouter(prefix="/employees", tags=["Employees"])
 
@@ -29,10 +32,17 @@ router = APIRouter(prefix="/employees", tags=["Employees"])
 async def create_employee(
     payload: EmployeeCreate,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_roles(*MANAGEMENT_ROLES)),
+    _: User = Depends(require_roles(*ADMIN_ROLE)),
 ) -> EmployeeOut:
     repo = SqlAlchemyEmployeeRepository(session)
     
+    # Check if user creation is requested and validate
+    if payload.create_user_account:
+        if not payload.password:
+            raise HTTPException(status_code=400, detail="Password is required when creating a user account")
+        if not payload.role:
+            raise HTTPException(status_code=400, detail="Role is required when creating a user account")
+
     employee = Employee.create(
         first_name=payload.first_name,
         last_name=payload.last_name,
@@ -44,6 +54,28 @@ async def create_employee(
     )
     
     await repo.add(employee)
+    
+    # Create user account if requested
+    if payload.create_user_account:
+        user_repo = UserRepository(session)
+        hasher = PasswordHasher()
+        use_case = CreateUserUseCase(user_repo, hasher)
+        
+        try:
+            # Ensure role is uppercase for Enum
+            role_enum = UserRole(payload.role.upper())
+            await use_case.execute(
+                CreateUserInput(
+                    email=payload.email,
+                    password=payload.password,  # type: ignore
+                    role=role_enum
+                )
+            )
+        except ValueError:
+             raise HTTPException(status_code=400, detail=f"Invalid role: {payload.role}")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to create user account: {str(e)}")
+
     return _map_employee(employee)
 
 
@@ -81,7 +113,7 @@ async def update_employee(
     employee_id: str,
     payload: EmployeeUpdate,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_roles(*MANAGEMENT_ROLES)),
+    _: User = Depends(require_roles(*ADMIN_ROLE)),
 ) -> EmployeeOut:
     repo = SqlAlchemyEmployeeRepository(session)
     employee = await repo.get_by_id(employee_id)
@@ -106,7 +138,7 @@ async def grant_increment(
     employee_id: str,
     payload: IncrementCreate,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_roles(*MANAGEMENT_ROLES)),
+    _: User = Depends(require_roles(*ADMIN_ROLE)),
 ) -> SalaryHistoryOut:
     repo = SqlAlchemyEmployeeRepository(session)
     employee = await repo.get_by_id(employee_id)
@@ -138,7 +170,7 @@ async def give_bonus(
     employee_id: str,
     payload: BonusCreate,
     session: AsyncSession = Depends(get_session),
-    _: User = Depends(require_roles(*MANAGEMENT_ROLES)),
+    _: User = Depends(require_roles(*ADMIN_ROLE)),
 ) -> BonusOut:
     repo = SqlAlchemyEmployeeRepository(session)
     employee = await repo.get_by_id(employee_id)

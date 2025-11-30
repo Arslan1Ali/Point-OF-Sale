@@ -60,6 +60,7 @@ def require_roles(*roles: UserRole) -> Callable[..., Awaitable[User]]:
 # - Purchasing mirrors inventory permissions while still granting managers control.
 # - Auditors receive read-only access alongside managers/admins.
 
+ADMIN_ROLE: tuple[UserRole, ...] = (UserRole.ADMIN,)
 MANAGEMENT_ROLES: tuple[UserRole, ...] = (UserRole.ADMIN, UserRole.MANAGER)
 INVENTORY_ROLES: tuple[UserRole, ...] = (UserRole.ADMIN, UserRole.MANAGER, UserRole.INVENTORY)
 SALES_ROLES: tuple[UserRole, ...] = (UserRole.ADMIN, UserRole.MANAGER, UserRole.CASHIER)

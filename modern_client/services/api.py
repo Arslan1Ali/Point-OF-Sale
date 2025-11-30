@@ -277,4 +277,66 @@ class ApiService:
             self._handle_error("Fetch financial history failed", e)
             return None
 
+    def get_users(self, search=None, role=None, active=None, limit=20):
+        try:
+            params = {"limit": limit}
+            if search: params["search"] = search
+            if role: params["role"] = role
+            if active is not None: params["active"] = str(active).lower()
+            
+            response = self.client.get("/auth/users", params=params)
+            response.raise_for_status()
+            return response.json()["items"]
+        except httpx.HTTPError as e:
+            self._handle_error("Fetch users failed", e)
+            return []
+
+    def update_user_role(self, user_id, role, current_version):
+        try:
+            response = self.client.post(
+                f"/auth/users/{user_id}/role", 
+                json={"role": role, "expected_version": current_version}
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            self._handle_error("Update user role failed", e)
+            return None
+
+    def deactivate_user(self, user_id, current_version):
+        try:
+            response = self.client.post(
+                f"/auth/users/{user_id}/deactivate", 
+                json={"expected_version": current_version}
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            self._handle_error("Deactivate user failed", e)
+            return None
+
+    def activate_user(self, user_id, current_version):
+        try:
+            response = self.client.post(
+                f"/auth/users/{user_id}/activate", 
+                json={"expected_version": current_version}
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            self._handle_error("Activate user failed", e)
+            return None
+            
+    def reset_user_password(self, user_id, new_password, current_version):
+        try:
+            response = self.client.post(
+                f"/auth/users/{user_id}/password", 
+                json={"new_password": new_password, "expected_version": current_version}
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            self._handle_error("Reset password failed", e)
+            return None
+
 api_service = ApiService()

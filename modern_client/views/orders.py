@@ -35,12 +35,12 @@ class OrdersView(ft.Container):
                 ft.Divider(height=20, color="transparent"),
                 ft.Container(
                     content=self.data_table,
-                    expand=True,
                     bgcolor="#1a1c1e",
                     border_radius=10,
                 )
             ],
-            expand=True
+            expand=True,
+            scroll=ft.ScrollMode.HIDDEN
         )
         self._load_data()
 

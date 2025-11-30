@@ -47,7 +47,6 @@ class CustomersView(ft.Container):
             rows=[],
             heading_row_color="#2d3033",
             data_row_color={"hovered": "#2d3033"},
-            expand=True,
         )
 
         self.content = self._build_layout()
@@ -75,12 +74,12 @@ class CustomersView(ft.Container):
                 ft.Container(height=20),
                 ft.Container(
                     content=self.data_table,
-                    expand=True,
                     bgcolor="#1a1c1e",
                     border_radius=10,
                 )
             ],
-            expand=True
+            expand=True,
+            scroll=ft.ScrollMode.HIDDEN
         )
 
     def _load_data(self, search=None):
@@ -149,7 +148,8 @@ class CustomersView(ft.Container):
                     self.phone_field
                 ],
                 tight=True,
-                width=400
+                width=400,
+                scroll=ft.ScrollMode.AUTO
             ),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda e: self.page.close_dialog()),

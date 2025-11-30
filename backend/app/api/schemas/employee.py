@@ -14,6 +14,11 @@ class EmployeeCreate(BaseModel):
     position: str = Field(min_length=1, max_length=100)
     hire_date: date
     base_salary: Decimal = Field(ge=0)
+    
+    # Optional user account creation
+    create_user_account: bool = False
+    password: str | None = Field(None, min_length=8)
+    role: str | None = Field(None, pattern="^(ADMIN|MANAGER|CASHIER|admin|manager|cashier)$")
 
 
 class EmployeeUpdate(BaseModel):

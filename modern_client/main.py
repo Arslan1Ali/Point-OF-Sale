@@ -1,4 +1,5 @@
 import flet as ft
+import jwt
 from views.login import LoginView
 from views.dashboard import DashboardView
 from views.pos import POSView
@@ -6,6 +7,7 @@ from views.orders import OrdersView
 from views.inventory import InventoryView
 from views.customers import CustomersView
 from views.employees import EmployeesView
+from views.users import UsersView
 from views.returns import ReturnsView
 from components.sidebar import Sidebar
 from services.api import api_service
@@ -16,6 +18,7 @@ class ModernPOSApp:
         self.setup_page()
         self._setup_error_handling()
         self.token = None
+        self.user_role = None
         self.current_view = None
         self.current_route = None
         self.main_layout = None
@@ -47,13 +50,30 @@ class ModernPOSApp:
 
     def login(self, token):
         self.token = token
-        self.navigate("dashboard")
+        try:
+            # Decode token without verification (backend verifies) to get role
+            decoded = jwt.decode(token, options={"verify_signature": False})
+            self.user_role = decoded.get("role", "CASHIER") # Default to restricted if missing
+            print(f"User logged in with role: {self.user_role}")
+        except Exception as e:
+            print(f"Error decoding token: {e}")
+            self.user_role = "CASHIER"
+
+        if self.user_role == "CASHIER":
+            self.navigate("pos")
+        else:
+            self.navigate("dashboard")
 
     def navigate(self, route):
         # Prevent redundant navigation
         if self.current_route == route:
             return
             
+        # Role Guard: Cashiers can only access POS, Login, Logout
+        if self.user_role == "CASHIER" and route not in ["pos", "login", "logout"]:
+            print(f"Access denied: Cashier attempted to access {route}")
+            return
+
         self.current_route = route
         
         if route == "login":
@@ -65,7 +85,10 @@ class ModernPOSApp:
             
         if route == "logout":
             self.token = None
+            self.user_role = None
             self.current_route = None
+            self.main_layout = None
+            self.content_area = None
             self.navigate("login")
             return
 
@@ -76,17 +99,23 @@ class ModernPOSApp:
             return
 
         # Create Main Layout if it doesn't exist
-        if not self.content_area:
+        if not self.main_layout:
             self.content_area = ft.Container(expand=True, bgcolor="#1a1c1e")
-            self.main_layout = ft.Row(
-                [
-                    Sidebar(self, self.page),
-                    ft.VerticalDivider(width=1, color="#2d3033"),
-                    self.content_area
-                ],
-                expand=True,
-                spacing=0
-            )
+            
+            if self.user_role == "CASHIER":
+                # Cashier Layout: Full Screen POS, No Sidebar
+                self.main_layout = self.content_area
+            else:
+                # Standard Layout: Sidebar + Content
+                self.main_layout = ft.Row(
+                    [
+                        Sidebar(self, self.page),
+                        ft.VerticalDivider(width=1, color="#2d3033"),
+                        self.content_area
+                    ],
+                    expand=True,
+                    spacing=0
+                )
 
         # Select View
         if route == "dashboard":
@@ -101,6 +130,8 @@ class ModernPOSApp:
             content = CustomersView(self)
         elif route == "employees":
             content = EmployeesView(self)
+        elif route == "users":
+            content = UsersView(self)
         elif route == "returns":
             content = ReturnsView(self)
         else:

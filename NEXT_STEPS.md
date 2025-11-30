@@ -3,6 +3,11 @@
 This document complements the scaffold and highlights prioritized upcoming tasks derived from the architecture plan.
 
 ## Recently Completed
+- Phase 10 Cashier Workflow: Implemented strict RBAC with separate layouts (Full Screen POS for Cashiers).
+- Phase 10 Cashier Workflow: Implemented RBAC in Frontend (hiding Admin views for Cashiers).
+- Phase 10 Cashier Workflow: Added "Create User Account" (with Role selection) to Employee Management for streamlined onboarding.
+- Phase 9 Employee Management: Full implementation of Employee CRUD, Salary History, Bonuses, and Frontend Views.
+- Phase 9 Employee Management: Fixed UI layout issues and improved input UX (Date Pickers).
 - Phase 3 Enterprise Scale: Redis Caching implemented for `/products` and `/categories` list endpoints with invalidation on updates.
 - Phase 2 Backend Hardening: Concurrency fixes (Optimistic Locking + DB Locking) for Sales recording to prevent overselling.
 - Phase 1 Frontend Parity: Modern Client updated with Config, Error Handling, Orders View, and Customer Selection.

@@ -33,7 +33,7 @@ class DashboardView(ft.Container):
                     content=self.recent_sales_list
                 )
             ],
-            scroll=ft.ScrollMode.AUTO
+            scroll=ft.ScrollMode.HIDDEN
         )
         self._load_data()
 

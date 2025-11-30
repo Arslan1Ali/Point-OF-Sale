@@ -49,7 +49,6 @@ class ReturnsView(ft.Container):
             rows=[],
             heading_row_color="#2d3033",
             data_row_color={"hovered": "#2d3033"},
-            expand=True,
         )
 
         self.content = self._build_layout()
@@ -76,12 +75,12 @@ class ReturnsView(ft.Container):
                 ft.Text("Recent Returns", size=20, weight=ft.FontWeight.BOLD, color="white"),
                 ft.Container(
                     content=self.returns_table,
-                    expand=True,
                     bgcolor="#1a1c1e",
                     border_radius=10,
                 )
             ],
-            expand=True
+            expand=True,
+            scroll=ft.ScrollMode.HIDDEN
         )
 
     def _load_returns(self):

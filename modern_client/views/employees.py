@@ -34,23 +34,31 @@ class EmployeesView(ft.Container):
             rows=[],
             heading_row_color="#2d3033",
             data_row_color={"hovered": "#2d3033"},
-            expand=True,
         )
+
+        # Check permissions
+        can_manage = self.app.user_role == "ADMIN"
+
+        header_controls = [
+            ft.Text("Employee Management", size=24, weight=ft.FontWeight.BOLD, color="white"),
+            ft.Container(expand=True),
+        ]
+
+        if can_manage:
+            header_controls.append(
+                ft.ElevatedButton(
+                    "Add Employee",
+                    icon=icons.ADD,
+                    bgcolor="#bb86fc",
+                    color="black",
+                    on_click=self._open_add_dialog
+                )
+            )
 
         self.content = ft.Column(
             [
                 ft.Row(
-                    [
-                        ft.Text("Employee Management", size=24, weight=ft.FontWeight.BOLD, color="white"),
-                        ft.Container(expand=True),
-                        ft.ElevatedButton(
-                            "Add Employee",
-                            icon=icons.ADD,
-                            bgcolor="#bb86fc",
-                            color="black",
-                            on_click=self._open_add_dialog
-                        )
-                    ],
+                    header_controls,
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN
                 ),
                 ft.Container(height=20),
@@ -61,10 +69,10 @@ class EmployeesView(ft.Container):
                     bgcolor="#1a1c1e",
                     border_radius=10,
                     padding=10,
-                    expand=True
                 )
             ],
-            expand=True
+            expand=True,
+            scroll=ft.ScrollMode.HIDDEN
         )
         
         self._load_data()
@@ -79,6 +87,25 @@ class EmployeesView(ft.Container):
             status_color = "#03dac6" if emp["is_active"] else "#cf6679"
             status_text = "Active" if emp["is_active"] else "Inactive"
             
+            actions = [
+                ft.IconButton(
+                    icon=icons.EDIT, 
+                    icon_color="#03dac6", 
+                    tooltip="Edit Details",
+                    on_click=lambda e, emp=emp: self._open_edit_dialog(emp)
+                )
+            ]
+
+            if self.app.user_role == "ADMIN":
+                actions.append(
+                    ft.IconButton(
+                        icon=icons.ATTACH_MONEY, 
+                        icon_color="#bb86fc", 
+                        tooltip="Financials",
+                        on_click=lambda e, emp=emp: self._open_financial_dialog(emp)
+                    )
+                )
+
             self.data_table.rows.append(
                 ft.DataRow(
                     cells=[
@@ -91,22 +118,7 @@ class EmployeesView(ft.Container):
                             padding=5,
                             border_radius=5
                         )),
-                        ft.DataCell(
-                            ft.Row([
-                                ft.IconButton(
-                                    icon=icons.EDIT, 
-                                    icon_color="#03dac6", 
-                                    tooltip="Edit Details",
-                                    on_click=lambda e, emp=emp: self._open_edit_dialog(emp)
-                                ),
-                                ft.IconButton(
-                                    icon=icons.ATTACH_MONEY, 
-                                    icon_color="#bb86fc", 
-                                    tooltip="Financials",
-                                    on_click=lambda e, emp=emp: self._open_financial_dialog(emp)
-                                ),
-                            ])
-                        ),
+                        ft.DataCell(ft.Row(actions)),
                     ]
                 )
             )
@@ -117,13 +129,45 @@ class EmployeesView(ft.Container):
         self._load_data(search=e.control.value)
 
     def _open_add_dialog(self, e):
-        first_name = ft.TextField(label="First Name", bgcolor="#2d3033", color="white", border_color="#bb86fc")
-        last_name = ft.TextField(label="Last Name", bgcolor="#2d3033", color="white", border_color="#bb86fc")
-        email = ft.TextField(label="Email", bgcolor="#2d3033", color="white", border_color="#bb86fc")
-        phone = ft.TextField(label="Phone", bgcolor="#2d3033", color="white", border_color="#bb86fc")
-        position = ft.TextField(label="Position", bgcolor="#2d3033", color="white", border_color="#bb86fc")
-        hire_date = ft.TextField(label="Hire Date (YYYY-MM-DD)", bgcolor="#2d3033", color="white", border_color="#bb86fc")
-        base_salary = ft.TextField(label="Base Salary", bgcolor="#2d3033", color="white", border_color="#bb86fc", keyboard_type=ft.KeyboardType.NUMBER)
+        first_name = ft.TextField(label="First Name", bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400)
+        last_name = ft.TextField(label="Last Name", bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400)
+        email = ft.TextField(label="Email", bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400)
+        phone = ft.TextField(label="Phone", bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400)
+        position = ft.TextField(label="Position", bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400)
+        
+        hire_date = ft.TextField(
+            label="Hire Date (YYYY-MM-DD)", 
+            bgcolor="#2d3033", 
+            color="white", 
+            border_color="#bb86fc", 
+            width=400,
+            read_only=True
+        )
+        
+        def handle_date_change(e):
+            hire_date.value = e.control.value.strftime('%Y-%m-%d')
+            hire_date.update()
+
+        date_picker = ft.DatePicker(
+            on_change=handle_date_change,
+        )
+        self.page.overlay.append(date_picker)
+        
+        hire_date.suffix = ft.IconButton(
+            icon=ft.icons.CALENDAR_MONTH,
+            on_click=lambda _: date_picker.pick_date()
+        )
+
+        base_salary = ft.TextField(label="Base Salary", bgcolor="#2d3033", color="white", border_color="#bb86fc", keyboard_type=ft.KeyboardType.NUMBER, width=400)
+
+        # User Account Fields
+        password_field = ft.TextField(label="Password", password=True, can_reveal_password=True, bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400, visible=False)
+        
+        def toggle_user_fields(e):
+            password_field.visible = e.control.value
+            dlg.content.update()
+
+        create_user_checkbox = ft.Checkbox(label="Create User Account (Role: CASHIER)", on_change=toggle_user_fields, fill_color="#bb86fc")
 
         def save(e):
             try:
@@ -134,8 +178,17 @@ class EmployeesView(ft.Container):
                     "phone": phone.value,
                     "position": position.value,
                     "hire_date": hire_date.value,
-                    "base_salary": float(base_salary.value) if base_salary.value else 0
+                    "base_salary": float(base_salary.value) if base_salary.value else 0,
+                    "create_user_account": create_user_checkbox.value
                 }
+                
+                if create_user_checkbox.value:
+                    if not password_field.value:
+                        self.page.show_snack_bar(ft.SnackBar(content=ft.Text("Password is required for user account")))
+                        return
+                    data["password"] = password_field.value
+                    data["role"] = "CASHIER"
+
                 if api_service.create_employee(data):
                     self.page.show_snack_bar(ft.SnackBar(content=ft.Text("Employee added!")))
                     dlg.open = False
@@ -148,7 +201,18 @@ class EmployeesView(ft.Container):
 
         dlg = ft.AlertDialog(
             title=ft.Text("Add Employee"),
-            content=ft.Column([first_name, last_name, email, phone, position, hire_date, base_salary], tight=True),
+            content=ft.Column(
+                [
+                    first_name, last_name, email, phone, position, hire_date, base_salary,
+                    ft.Divider(),
+                    create_user_checkbox,
+                    password_field
+                ], 
+                tight=True, 
+                scroll=ft.ScrollMode.AUTO,
+                height=500,
+                width=450
+            ),
             actions=[
                 ft.TextButton("Cancel", on_click=lambda e: setattr(dlg, 'open', False)),
                 ft.ElevatedButton("Save", on_click=save, bgcolor="#bb86fc", color="black"),
@@ -213,9 +277,31 @@ class EmployeesView(ft.Container):
         )
 
         def open_increment_dialog(e):
-            new_salary = ft.TextField(label="New Salary", value=str(emp['base_salary']), bgcolor="#2d3033", color="white", border_color="#bb86fc")
-            reason = ft.TextField(label="Reason", bgcolor="#2d3033", color="white", border_color="#bb86fc")
-            date_field = ft.TextField(label="Date (YYYY-MM-DD)", bgcolor="#2d3033", color="white", border_color="#bb86fc")
+            new_salary = ft.TextField(label="New Salary", value=str(emp['base_salary']), bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400)
+            reason = ft.TextField(label="Reason", bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400)
+            
+            date_field = ft.TextField(
+                label="Date (YYYY-MM-DD)", 
+                bgcolor="#2d3033", 
+                color="white", 
+                border_color="#bb86fc", 
+                width=400,
+                read_only=True
+            )
+            
+            def handle_inc_date_change(e):
+                date_field.value = e.control.value.strftime('%Y-%m-%d')
+                date_field.update()
+
+            inc_date_picker = ft.DatePicker(
+                on_change=handle_inc_date_change,
+            )
+            self.page.overlay.append(inc_date_picker)
+            
+            date_field.suffix = ft.IconButton(
+                icon=ft.icons.CALENDAR_MONTH,
+                on_click=lambda _: inc_date_picker.pick_date()
+            )
 
             def save_inc(e):
                 try:
@@ -237,7 +323,7 @@ class EmployeesView(ft.Container):
 
             inc_dlg = ft.AlertDialog(
                 title=ft.Text("Grant Increment"),
-                content=ft.Column([new_salary, reason, date_field], tight=True),
+                content=ft.Column([new_salary, reason, date_field], tight=True, scroll=ft.ScrollMode.AUTO, width=450),
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda e: setattr(inc_dlg, 'open', False)),
                     ft.ElevatedButton("Save", on_click=save_inc, bgcolor="#bb86fc", color="black"),
@@ -249,9 +335,31 @@ class EmployeesView(ft.Container):
             self.page.update()
 
         def open_bonus_dialog(e):
-            amount = ft.TextField(label="Amount", bgcolor="#2d3033", color="white", border_color="#bb86fc")
-            reason = ft.TextField(label="Reason", bgcolor="#2d3033", color="white", border_color="#bb86fc")
-            date_field = ft.TextField(label="Date (YYYY-MM-DD)", bgcolor="#2d3033", color="white", border_color="#bb86fc")
+            amount = ft.TextField(label="Amount", bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400)
+            reason = ft.TextField(label="Reason", bgcolor="#2d3033", color="white", border_color="#bb86fc", width=400)
+            
+            date_field = ft.TextField(
+                label="Date (YYYY-MM-DD)", 
+                bgcolor="#2d3033", 
+                color="white", 
+                border_color="#bb86fc", 
+                width=400,
+                read_only=True
+            )
+            
+            def handle_bonus_date_change(e):
+                date_field.value = e.control.value.strftime('%Y-%m-%d')
+                date_field.update()
+
+            bonus_date_picker = ft.DatePicker(
+                on_change=handle_bonus_date_change,
+            )
+            self.page.overlay.append(bonus_date_picker)
+            
+            date_field.suffix = ft.IconButton(
+                icon=ft.icons.CALENDAR_MONTH,
+                on_click=lambda _: bonus_date_picker.pick_date()
+            )
 
             def save_bonus(e):
                 try:
@@ -273,7 +381,7 @@ class EmployeesView(ft.Container):
 
             bonus_dlg = ft.AlertDialog(
                 title=ft.Text("Award Bonus"),
-                content=ft.Column([amount, reason, date_field], tight=True),
+                content=ft.Column([amount, reason, date_field], tight=True, scroll=ft.ScrollMode.AUTO, width=450),
                 actions=[
                     ft.TextButton("Cancel", on_click=lambda e: setattr(bonus_dlg, 'open', False)),
                     ft.ElevatedButton("Save", on_click=save_bonus, bgcolor="#bb86fc", color="black"),
