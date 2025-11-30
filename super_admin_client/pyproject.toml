@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "retail-pos-super-admin-client"
+version = "0.1.0"
+description = "SuperAdmin Portal for Retail POS"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flet = "^0.21.0"
+httpx = "^0.27.0"
+pydantic = "^2.8.0"
+python-dotenv = "^1.0.1"
+pyjwt = "^2.10.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.2"
+ruff = "^0.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

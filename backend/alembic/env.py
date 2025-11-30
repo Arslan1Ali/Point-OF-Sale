@@ -9,6 +9,8 @@ from alembic import context
 from app.core.settings import get_settings
 from app.infrastructure.db.models import (
     product_model,  # noqa: F401 ensure product table metadata loaded
+    tenant_model,
+    subscription_plan_model,
 )
 from app.infrastructure.db.models.auth import (
     user_model,  # noqa: F401 ensure user table metadata loaded

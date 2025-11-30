@@ -13,4 +13,8 @@ Start-Sleep -Seconds 5
 Write-Host "Launching Frontend..."
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\modern_client'; py -m poetry run python main.py"
 
+# Start SuperAdmin Portal
+Write-Host "Launching SuperAdmin Portal (Port 8080)..."
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\super_admin_client'; py -m poetry run python main.py"
+
 Write-Host "Done! Check the new windows."

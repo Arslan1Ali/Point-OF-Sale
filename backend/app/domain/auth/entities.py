@@ -11,6 +11,7 @@ from app.domain.common.identifiers import new_ulid
 
 
 class UserRole(str, Enum):
+    SUPER_ADMIN = "SUPER_ADMIN"
     ADMIN = "ADMIN"
     MANAGER = "MANAGER"
     CASHIER = "CASHIER"

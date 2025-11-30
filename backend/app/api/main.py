@@ -19,6 +19,7 @@ from app.api.routers import (
     returns_router,
     sales_router,
     suppliers_router,
+    tenants_router,
 )
 from app.core.logging import configure_logging
 from app.core.settings import get_settings
@@ -62,3 +63,4 @@ app.include_router(returns_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(suppliers_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(purchases_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(employees_router.router, prefix=settings.API_V1_PREFIX)
+app.include_router(tenants_router.router, prefix=settings.API_V1_PREFIX)

@@ -45,7 +45,7 @@ This plan outlines the checks every PR must satisfy. GitHub Actions configuratio
    ```yaml
    services:
      postgres:
-       image: postgres:15
+       image: postgresr:15
        ports: [5432:5432]
        env:
     POSTGRES_PASSWORD: "1234"
