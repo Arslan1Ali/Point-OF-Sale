@@ -12,6 +12,8 @@ from app.api.routers import (
     auth_router,
     categories_router,
     customers_router,
+    employees_router,
+    inventory_router,
     products_router,
     purchases_router,
     returns_router,
@@ -51,6 +53,7 @@ async def health() -> dict[str, str]:  # pragma: no cover - trivial
 
 
 app.include_router(products_router.router, prefix=settings.API_V1_PREFIX)
+app.include_router(inventory_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(auth_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(categories_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(sales_router.router, prefix=settings.API_V1_PREFIX)
@@ -58,3 +61,4 @@ app.include_router(customers_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(returns_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(suppliers_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(purchases_router.router, prefix=settings.API_V1_PREFIX)
+app.include_router(employees_router.router, prefix=settings.API_V1_PREFIX)

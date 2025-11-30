@@ -83,6 +83,31 @@ class SqlAlchemyInventoryMovementRepository(InventoryMovementRepository):
             as_of=effective_as_of,
         )
 
+    async def get_stock_levels(self, product_ids: Sequence[str]) -> dict[str, int]:
+        if not product_ids:
+            return {}
+            
+        delta_case = case(
+            (
+                InventoryMovementModel.direction == MovementDirection.IN.value,
+                InventoryMovementModel.quantity,
+            ),
+            else_=-InventoryMovementModel.quantity,
+        )
+        
+        stmt = (
+            select(
+                InventoryMovementModel.product_id,
+                func.coalesce(func.sum(delta_case), 0).label("total_delta")
+            )
+            .where(InventoryMovementModel.product_id.in_(product_ids))
+            .group_by(InventoryMovementModel.product_id)
+        )
+        
+        res = await self._session.execute(stmt)
+        rows = res.all()
+        return {row.product_id: int(row.total_delta) for row in rows}
+
     async def get_last_movement_at(self, product_id: str) -> datetime | None:
         stmt = (
             select(func.max(InventoryMovementModel.occurred_at))

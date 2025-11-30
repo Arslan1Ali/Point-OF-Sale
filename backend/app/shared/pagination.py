@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import ceil
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -25,11 +25,14 @@ class PageMeta(BaseModel):
     pages: int
 
 
-class Page(BaseModel):
-    items: list[Any]
+T = TypeVar("T")
+
+
+class Page(BaseModel, Generic[T]):
+    items: list[T]
     meta: PageMeta
 
     @staticmethod
-    def build(items: list[Any], total: int, params: PageParams) -> Page:
+    def build(items: list[T], total: int, params: PageParams) -> Page[T]:
         pages = ceil(total / params.limit) if total else 1
         return Page(items=items, meta=PageMeta(page=params.page, limit=params.limit, total=total, pages=pages))

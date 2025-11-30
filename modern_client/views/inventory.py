@@ -29,7 +29,7 @@ class InventoryView(ft.Container):
                 ft.dropdown.Option("Active"),
                 ft.dropdown.Option("Inactive"),
             ],
-            value="All",
+            value="Active",
             width=150,
             bgcolor="#2d3033",
             color="white",
@@ -140,15 +140,23 @@ class InventoryView(ft.Container):
         self.price_field = ft.TextField(label="Retail Price", value=str(self.current_product.get("retail_price")) if self.current_product else "0.00")
         self.cost_field = ft.TextField(label="Purchase Price", value=str(self.current_product.get("purchase_price")) if self.current_product else "0.00")
 
+        fields = [
+            self.name_field,
+            self.sku_field,
+            self.price_field,
+            self.cost_field
+        ]
+
+        if not self.current_product:
+            self.stock_field = ft.TextField(label="Initial Stock", value="0")
+            fields.append(self.stock_field)
+        else:
+            self.stock_field = None
+
         self.dialog = ft.AlertDialog(
             title=ft.Text(self.dialog_title),
             content=ft.Column(
-                [
-                    self.name_field,
-                    self.sku_field,
-                    self.price_field,
-                    self.cost_field
-                ],
+                fields,
                 tight=True,
                 width=400
             ),
@@ -160,28 +168,38 @@ class InventoryView(ft.Container):
         self.page.show_dialog(self.dialog)
 
     def _save_product(self, e):
-        data = {
-            "name": self.name_field.value,
-            "sku": self.sku_field.value,
-            "retail_price": float(self.price_field.value),
-            "purchase_price": float(self.cost_field.value),
-            "currency": "USD"
-        }
+        try:
+            data = {
+                "name": self.name_field.value,
+                "sku": self.sku_field.value,
+                "retail_price": float(self.price_field.value),
+                "purchase_price": float(self.cost_field.value),
+                "currency": "USD"
+            }
 
-        if self.current_product:
-            # Update
-            data["expected_version"] = self.current_product["version"]
-            result = api_service.update_product(self.current_product["id"], data)
-        else:
-            # Create
-            result = api_service.create_product(data)
+            if self.current_product:
+                # Update
+                data["expected_version"] = self.current_product["version"]
+                result = api_service.update_product(self.current_product["id"], data)
+            else:
+                # Create
+                result = api_service.create_product(data)
+                if result and self.stock_field:
+                    try:
+                        initial_stock = int(self.stock_field.value)
+                        if initial_stock > 0:
+                            api_service.record_inventory_movement(result["id"], initial_stock)
+                    except ValueError:
+                        pass # Ignore invalid stock value
 
-        if result:
-            self.page.close_dialog()
-            self._load_data()
-            self.page.show_snack_bar(ft.SnackBar(content=ft.Text("Product saved!")))
-        else:
-            self.page.show_snack_bar(ft.SnackBar(content=ft.Text("Error saving product")))
+            if result:
+                self.page.close_dialog()
+                self._load_data()
+                self.page.show_snack_bar(ft.SnackBar(content=ft.Text("Product saved!")))
+            else:
+                self.page.show_snack_bar(ft.SnackBar(content=ft.Text("Error saving product")))
+        except ValueError:
+             self.page.show_snack_bar(ft.SnackBar(content=ft.Text("Invalid number format")))
 
     def _delete_product(self, product):
         if api_service.delete_product(product["id"], product["version"]):

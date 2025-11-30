@@ -107,7 +107,8 @@ class POSView(ft.Container):
         )
 
     def _load_data(self):
-        self.products = api_service.get_products()
+        # Only load active products for POS
+        self.products = api_service.get_products(active=True)
         self.customers = api_service.get_customers()
         
         self._render_products(self.products)
@@ -132,14 +133,18 @@ class POSView(ft.Container):
     def _build_product_card(self, product):
         name = product.get("name", "Unknown")
         price = float(product.get("retail_price", 0))
-        color = "#bb86fc" 
+        stock = int(product.get("stock_quantity", 0))
+        is_out_of_stock = stock <= 0
+        
+        color = "#bb86fc" if not is_out_of_stock else "#cf6679"
         
         return ft.Container(
             bgcolor="#2d3033",
             border_radius=15,
             padding=15,
-            ink=True,
-            on_click=lambda e: self._add_to_cart(product),
+            ink=not is_out_of_stock,
+            on_click=lambda e: self._add_to_cart(product) if not is_out_of_stock else None,
+            opacity=0.5 if is_out_of_stock else 1.0,
             content=ft.Column(
                 [
                     ft.Container(
@@ -147,14 +152,15 @@ class POSView(ft.Container):
                         border_radius=10,
                         bgcolor=color, 
                         alignment=ft.alignment.center,
-                        content=ft.Icon(icons.SHOPPING_BAG, color="white", size=40)
+                        content=ft.Icon(icons.SHOPPING_BAG if not is_out_of_stock else icons.BLOCK, color="white", size=40)
                     ),
                     ft.Text(name, size=16, weight=ft.FontWeight.BOLD, color="white", no_wrap=True, overflow=ft.TextOverflow.ELLIPSIS),
+                    ft.Text(f"Stock: {stock}", size=12, color="grey"),
                     ft.Row(
                         [
                             ft.Text(f"${price:.2f}", size=14, color="#bb86fc", weight=ft.FontWeight.BOLD),
                             ft.Container(
-                                bgcolor="#bb86fc",
+                                bgcolor="#bb86fc" if not is_out_of_stock else "grey",
                                 border_radius=50,
                                 padding=5,
                                 content=ft.Icon(icons.ADD, size=16, color="black")
@@ -168,8 +174,16 @@ class POSView(ft.Container):
         )
 
     def _add_to_cart(self, product):
+        stock = int(product.get("stock_quantity", 0))
         price = float(product.get("retail_price", 0))
         existing = next((item for item in self.cart_items if item["id"] == product["id"]), None)
+        
+        current_qty = existing["qty"] if existing else 0
+        if current_qty + 1 > stock:
+             if self.page:
+                self.page.show_snack_bar(ft.SnackBar(content=ft.Text(f"Cannot add more. Only {stock} in stock.")))
+             return
+
         if existing:
             existing["qty"] += 1
         else:

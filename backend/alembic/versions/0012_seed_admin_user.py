@@ -27,29 +27,7 @@ ADMIN_PASSWORD_HASH = (
 ADMIN_PASSWORD = "AdminPass123!"  # noqa: S105
 
 def upgrade() -> None:
-    now = datetime.now(timezone.utc).isoformat()
-    insert_stmt = sa.text(
-        """
-        INSERT INTO users (id, email, password_hash, role, active, created_at, updated_at, version)
-        SELECT :id, :email, :password_hash, :role, 1, :created_at, :updated_at, 1
-        WHERE NOT EXISTS (
-            SELECT 1 FROM users WHERE email = :email_check
-        )
-        """
-    )
-    conn = op.get_bind()
-    conn.execute(
-        insert_stmt,
-        {
-            "id": ADMIN_ID,
-            "email": ADMIN_EMAIL,
-            "password_hash": ADMIN_PASSWORD_HASH,
-            "role": "ADMIN",
-            "created_at": now,
-            "updated_at": now,
-            "email_check": ADMIN_EMAIL,
-        },
-    )
+    pass
 
 
 def downgrade() -> None:

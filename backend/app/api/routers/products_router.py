@@ -253,6 +253,12 @@ async def list_products(
             sort_direction=sort_direction,
         )
     )
+
+    # Fetch stock levels
+    inventory_repo = SqlAlchemyInventoryMovementRepository(session)
+    product_ids = [p.id for p in result.products]
+    stock_levels = await inventory_repo.get_stock_levels(product_ids)
+
     items = [
         {
             "id": p.id,
@@ -263,6 +269,7 @@ async def list_products(
             "category_id": p.category_id,
             "active": p.active,
             "version": p.version,
+            "stock_quantity": stock_levels.get(p.id, 0),
         }
         for p in result.products
     ]

@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import SALES_ROLES, require_roles
+from app.api.dependencies.cache import get_cache_service
+from app.application.common.cache import CacheService
 from app.api.schemas.sale import SaleCreate, SaleListOut, SaleOut, SalePageMetaOut, SaleRecordOut
 from app.application.sales.use_cases.get_sale import GetSaleInput, GetSaleUseCase
 from app.application.sales.use_cases.list_sales import ListSalesInput, ListSalesUseCase
@@ -21,6 +23,7 @@ from app.infrastructure.db.repositories.inventory_movement_repository import (
 )
 from app.infrastructure.db.repositories.inventory_repository import SqlAlchemyProductRepository
 from app.infrastructure.db.repositories.sales_repository import SqlAlchemySalesRepository
+from app.infrastructure.db.repositories.returns_repository import SqlAlchemyReturnsRepository
 from app.infrastructure.db.session import get_session
 
 router = APIRouter(prefix="/sales", tags=["sales"])
@@ -30,6 +33,7 @@ router = APIRouter(prefix="/sales", tags=["sales"])
 async def record_sale(
     payload: SaleCreate,
     session: AsyncSession = Depends(get_session),
+    cache: CacheService = Depends(get_cache_service),
     _: User = Depends(require_roles(*SALES_ROLES)),
 ) -> SaleRecordOut:
     product_repo = SqlAlchemyProductRepository(session)
@@ -51,6 +55,7 @@ async def record_sale(
             ],
         )
     )
+    await cache.clear_prefix("products:list")
     return SaleRecordOut.build(result.sale, result.movements)
 
 
@@ -61,9 +66,14 @@ async def get_sale(
     _: User = Depends(require_roles(*(SALES_ROLES + (UserRole.AUDITOR,)))),
 ) -> SaleOut:
     sales_repo = SqlAlchemySalesRepository(session)
+    returns_repo = SqlAlchemyReturnsRepository(session)
     use_case = GetSaleUseCase(sales_repo)
     sale = await use_case.execute(GetSaleInput(sale_id=sale_id))
-    return SaleOut.from_domain(sale)
+    
+    item_ids = [item.id for item in sale.iter_items()]
+    returned_quantities = await returns_repo.get_returned_quantities(item_ids)
+    
+    return SaleOut.from_domain(sale, returned_quantities)
 
 
 @router.get("", response_model=SaleListOut)

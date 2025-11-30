@@ -19,6 +19,7 @@ ruff_cache/
 .DS_Store
 
 # Project-specific
+/dev.db
 /backend/dev.db
 /backend/.env.local
 /backend/.env

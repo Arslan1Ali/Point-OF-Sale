@@ -21,6 +21,8 @@ class Sidebar(ft.Container):
                 self._build_nav_item(icons.RECEIPT_LONG, "Orders", "orders"),
                 self._build_nav_item(icons.INVENTORY, "Inventory", "inventory"),
                 self._build_nav_item(icons.PEOPLE, "Customers", "customers"),
+                self._build_nav_item(icons.BADGE, "Employees", "employees"),
+                self._build_nav_item(icons.ASSIGNMENT_RETURN, "Returns", "returns"),
                 ft.Divider(color="grey"),
                 self._build_nav_item(icons.LOGOUT, "Logout", "logout", color="#cf6679"),
             ],

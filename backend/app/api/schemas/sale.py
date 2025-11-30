@@ -34,15 +34,17 @@ class SaleItemOut(BaseModel):
     id: str
     product_id: str
     quantity: int
+    returned_quantity: int = 0
     unit_price: str
     line_total: str
 
     @classmethod
-    def from_domain(cls, item: SaleItem) -> SaleItemOut:
+    def from_domain(cls, item: SaleItem, returned_quantity: int = 0) -> SaleItemOut:
         return cls(
             id=item.id,
             product_id=item.product_id,
             quantity=item.quantity,
+            returned_quantity=returned_quantity,
             unit_price=str(item.unit_price.amount),
             line_total=str(item.line_total.amount),
         )
@@ -59,7 +61,8 @@ class SaleOut(BaseModel):
     customer_id: str | None
 
     @classmethod
-    def from_domain(cls, sale: Sale) -> SaleOut:
+    def from_domain(cls, sale: Sale, returned_quantities: dict[str, int] | None = None) -> SaleOut:
+        returned_quantities = returned_quantities or {}
         return cls(
             id=sale.id,
             currency=sale.currency,
@@ -67,7 +70,10 @@ class SaleOut(BaseModel):
             total_quantity=sale.total_quantity,
             created_at=sale.created_at,
             closed_at=sale.closed_at,
-            items=[SaleItemOut.from_domain(item) for item in sale.iter_items()],
+            items=[
+                SaleItemOut.from_domain(item, returned_quantities.get(item.id, 0))
+                for item in sale.iter_items()
+            ],
             customer_id=sale.customer_id,
         )
 

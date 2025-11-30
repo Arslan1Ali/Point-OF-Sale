@@ -23,6 +23,7 @@ class ProductOut(BaseModel):
     category_id: str | None
     active: bool
     version: int
+    stock_quantity: int = 0
 
     model_config = dict(from_attributes=True)
 
